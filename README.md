@@ -1,41 +1,40 @@
 # Gerritfs
 
-Welcome to your new gem! In this directory, you'll find the files you need to be able to package up your Ruby library into a gem. Put your Ruby code in the file `lib/gerritfs`. To experiment with that code, run `bin/console` for an interactive prompt.
+This gem allows to mount a gerrit as a filesystem. It aims to improve UX to operate reviews.
 
-TODO: Delete this and the text above, and describe your gem
+Usage
+-----
 
-## Installation
-
-Add this line to your application's Gemfile:
-
-```ruby
-gem 'gerritfs'
+```
+mkdir /tmp/gerrit
+bin/mount /tmp/gerrit gerrit.yml
 ```
 
-And then execute:
+where gerrit.yml contains:
 
-    $ bundle
+```
+base_url: http://gerrit.mydomain
+username: a.username
+password: my_gerrit_http_password # see your preference
+```
 
-Or install it yourself as:
+Tree mapping (intent, most of it not implemented yet)
+------------
 
-    $ gem install gerritfs
+- **/my** contains a list of reviews grouped by projects and a file named **dashboard**
+ - **/my/dashboard** contains a small recap of all reviews with their status (score, verified)
+ - **/my/[group]/[project]/** contains a folder per review
+- **/projects** contains one subdir per group containing one subdir per project
+ - **/projects/[group]/[project]/** contains a clone of the project allowing easy browsing
 
-## Usage
+A review directory contains:
+- **_INFO**: all metadata linked to the review (author, reviewers, scores)
+- all patched files (including the commit message, named commit). The format is the one of diff patch + comments
+- **_DISCUSSION**: a summary of the discussion so far
+- **_REVIEW.tmp**: a temporary file listing all comments not published so far
 
-TODO: Write usage instructions here
+Moving \_REVIEW.tmp to REVIEW should publish the comments to gerrit.
 
-## Development
+Patched files are in diff format (with some context). Comments are prefixed by @[author]. Opening a new line, will create a new comment on the line above.
 
-After checking out the repo, run `bin/setup` to install dependencies. Then, run `rake spec` to run the tests. You can also run `bin/console` for an interactive prompt that will allow you to experiment.
-
-To install this gem onto your local machine, run `bundle exec rake install`. To release a new version, update the version number in `version.rb`, and then run `bundle exec rake release`, which will create a git tag for the version, push git commits and tags, and push the `.gem` file to [rubygems.org](https://rubygems.org).
-
-## Contributing
-
-Bug reports and pull requests are welcome on GitHub at https://github.com/[USERNAME]/gerritfs.
-
-
-## License
-
-The gem is available as open source under the terms of the [MIT License](http://opensource.org/licenses/MIT).
-
+Of course this interface is going to change before being stabilized.
