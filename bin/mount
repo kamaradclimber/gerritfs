@@ -1,0 +1,26 @@
+#!/usr/bin/env ruby
+
+require "bundler/setup"
+require "gerritfs"
+
+require 'yaml'
+
+PRECONDITION_FAILED_CODE = 2
+
+if (ARGV.size < 2)
+  puts "Usage: #{$0} <directory> <yamlfile> <options>"
+  exit PRECONDITION_FAILED_CODE
+end
+
+dirname, yamlfile = ARGV.shift, ARGV.shift
+unless File.directory?(dirname)
+  puts "Usage: #{dirname} is not a directory."
+  exit PRECONDITION_FAILED_CODE
+end
+
+opts = YAML.load(IO.read(yamlfile))
+root = GerritFS::BaseFS.new(Mash.new(opts))
+
+FuseFS.set_root(root)
+FuseFS.mount_under(dirname, *ARGV)
+FuseFS.run # This doesn't return until we're unmounted.
