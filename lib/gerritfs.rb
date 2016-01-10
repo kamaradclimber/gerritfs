@@ -2,6 +2,7 @@ require "gerritfs/version"
 require "gerritfs/gerrit/client"
 
 require 'rfusefs'
+require 'tmpdir'
 
 module GerritFS
   class BaseFS
@@ -74,9 +75,51 @@ module GerritFS
 
   end
 
+  class ClonedProjectFS
+    def initialize(gerrit, clone_url)
+      @gerrit = gerrit
+      @clone_url = clone_url
+      @temp = Dir.mktmpdir
+      puts "Cloning #{clone_url} in #{@temp}"
+      cmd = "git clone --depth 5 #{clone_url} #{@temp}"
+      puts cmd
+      begin
+      `git clone --depth 5 #{clone_url} #{@temp}`
+      rescue => e
+        puts e
+      end
+    end
+
+    def contents(path)
+      puts self.class.to_s +  '|' + __method__.to_s + '|' + path
+
+      prefix = File.join(@temp, path)
+      Dir[File.join(prefix, '*')].map do |file|
+        file.gsub(prefix, '')
+      end
+    end
+
+    def file?(path)
+      puts self.class.to_s +  '|' + __method__.to_s + '|' + path
+      puts File.join(@temp, path)
+      File.file?(File.join(@temp, path))
+    end
+
+    def directory?(path)
+      puts self.class.to_s +  '|' + __method__.to_s + '|' + path
+      File.directory?(File.join(@temp, path))
+    end
+
+  end
+
   class ProjectsFS
     def initialize(gerrit)
       @gerrit = gerrit
+    end
+
+    def clones
+      @clones ||= {}
+      @clones
     end
 
     def projects
@@ -95,8 +138,13 @@ module GerritFS
         projects.keys.
           select { |full| full =~ /^#{subs.first}\//}.
           map    { |full| full.split('/')[1] }.compact.uniq
-      else
-        raise "Not supported yet #{path}"
+      else # forward to clone
+        project = projects[subs.join('/')]
+        raise "Unknown project #{subs.join('/')}" unless project
+        clone = @gerrit.clone_url_for(subs.take(2).join('/'))
+        clones[path] ||= ClonedProjectFS.new(@gerrit, clone)
+        clones[path].contents(subs.drop(2).join('/'))
+
       end
     end
 
@@ -108,7 +156,11 @@ module GerritFS
       when 0,1
         false
       when 2
-        true
+        false
+      else
+        clone = @gerrit.clone_url_for(subs.take(2).join('/'))
+        clones[path] ||= ClonedProjectFS.new(@gerrit, clone)
+        clones[path].file?(subs.drop(2).join('/'))
       end
     end
 
