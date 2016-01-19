@@ -54,33 +54,44 @@ module GerritFS
       @gerrit = gerrit
       @clone_url = clone_url
       @temp = Dir.mktmpdir
-      puts "Cloning #{clone_url} in #{@temp}"
-      cmd = "git clone --depth 5 #{clone_url} #{@temp}"
+    end
+
+    def clone!
+      return true if @cloned
+      puts "Cloning #{@clone_url} in #{@temp}"
+      cmd = "git clone --depth 5 #{@clone_url} #{@temp}"
       puts cmd
       begin
-      `git clone --depth 5 #{clone_url} #{@temp}`
+      `git clone --depth 5 #{@clone_url} #{@temp}`
+      @cloned = true
       rescue => e
         puts e
+        raise
       end
     end
 
     def contents(path)
+      clone!
       puts self.class.to_s +  '|' + __method__.to_s + '|' + path
 
       prefix = File.join(@temp, path)
+      puts "Real path " + prefix
       Dir[File.join(prefix, '*')].map do |file|
-        file.gsub(prefix, '')
+        file.gsub(prefix, '').gsub(/^\//,'')
       end
     end
 
     def file?(path)
+      clone!
       puts self.class.to_s +  '|' + __method__.to_s + '|' + path
-      puts File.join(@temp, path)
+      puts "Real path " + File.join(@temp, path)
       File.file?(File.join(@temp, path))
     end
 
     def directory?(path)
+      clone!
       puts self.class.to_s +  '|' + __method__.to_s + '|' + path
+      puts "Real path " + File.join(@temp, path)
       File.directory?(File.join(@temp, path))
     end
 
@@ -101,47 +112,15 @@ module GerritFS
       @projects # todo add clever caching
     end
 
-    def contents(path)
-      puts self.class.to_s +  '|' + __method__.to_s + '|' + path
-      subs = path.gsub(/^\//,'').split('/')
-      puts "Size #{subs.size}"
-      case subs.size
-      when 0
-        projects.keys.map { |full| full.split('/')[0] }.uniq
-      when 1
-        projects.keys.
-          select { |full| full =~ /^#{subs.first}\//}.
-          map    { |full| full.split('/')[1] }.compact.uniq
-      else # forward to clone
-        project = projects[subs.join('/')]
-        raise "Unknown project #{subs.join('/')}" unless project
-        clone = @gerrit.clone_url_for(subs.take(2).join('/'))
-        clones[path] ||= ClonedProjectFS.new(@gerrit, clone)
-        clones[path].contents(subs.drop(2).join('/'))
-
+    def elements
+      @elements ||= projects.each_with_object({}) do |pair, mem|
+        name, project = pair
+        url = @gerrit.clone_url_for(name)
+        mem[name.gsub('/', '_')] = ClonedProjectFS.new(@gerrit, url)
       end
     end
 
-    def file?(path)
-      puts self.class.to_s +  '|' + __method__.to_s + '|' + path
-      subs = path.gsub(/^\//,'').split('/')
-      puts "Size #{subs.size}"
-      case subs.size
-      when 0,1
-        false
-      when 2
-        false
-      else
-        clone = @gerrit.clone_url_for(subs.take(2).join('/'))
-        clones[path] ||= ClonedProjectFS.new(@gerrit, clone)
-        clones[path].file?(subs.drop(2).join('/'))
-      end
-    end
-
-    def directory(path)
-      puts self.class.to_s +  '|' + __method__.to_s + '|' + path
-      !file?(path)
-    end
+    include CompositionFS
 
     def read_file(path)
       puts self.class.to_s +  '|' + __method__.to_s + '|' + path
