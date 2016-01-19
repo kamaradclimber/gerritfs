@@ -1,5 +1,6 @@
 require "gerritfs/version"
 require "gerritfs/gerrit/client"
+require "gerritfs/compositionfs"
 
 require 'rfusefs'
 require 'tmpdir'
@@ -12,41 +13,14 @@ module GerritFS
       @my       = ChangesFS.new(client, 'q=is:open+owner:self&q=is:open+reviewer:self+-owner:self&q=is:closed+owner:self+limit:5')
     end
 
-    def contents(path)
-      puts self.class.to_s +  '|' + __method__.to_s + '|' + path
-      case path
-      when '/'
-        [ 'my', 'projects' ]
-      when /\/projects(.*)/
-        @projects.contents($1)
-      when /\/my(.*)/
-        @my.contents($1)
-      else
-        # should forward to sub FS
-        raise "Not implemented yet #{path}"
-      end
+    def elements
+      {
+        projects: @projects,
+        my:       @my,
+      }
     end
 
-    def file?(path)
-      case path
-      when '/'
-        false
-      when /\/projects\/(.*)/
-        @projects.file?($1)
-      when /\/my\/(.*)/
-        @my.file?($1)
-      when '/my', '/projects'
-        false
-      else
-        # should forward to sub FS
-        raise "Not implemented yet #{path}"
-      end
-    end
-
-    def directory?(path)
-      !file?(path)
-    end
-
+    include CompositionFS
   end
 
   class ChangesFS
