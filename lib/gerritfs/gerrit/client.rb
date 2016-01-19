@@ -27,13 +27,17 @@ module GerritFS
         @base_url
       end
 
-      def changes(query)
-        response = @client.get(base_url + '/a/changes/' + '?' + query)
+      def get(path)
+        response = @client.get(base_url + path)
         if response.code == 200
         JSON.parse(strip(response.body)) 
         else
           raise "Invalid response code #{response.code}", response
         end
+      end
+
+      def changes(query)
+        get('/a/changes/' + '?' + query)
       end
 
       def clone_url_for(project)
@@ -41,12 +45,7 @@ module GerritFS
       end
 
       def projects
-        response = @client.get(base_url + '/a/projects/') 
-        if response.code == 200
-        JSON.parse(strip(response.body)) 
-        else
-          raise "Invalid response code #{response.code}", response
-        end
+        get('/a/projects/')
       end
     end
   end

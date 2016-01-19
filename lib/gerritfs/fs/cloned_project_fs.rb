@@ -36,6 +36,7 @@ module GerritFS
     end
 
     def file?(path)
+      return false if path == '/' #avoid clone
       clone!
       puts self.class.to_s +  '|' + __method__.to_s + '|' + path
       File.file?(real(path))
