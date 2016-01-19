@@ -34,5 +34,10 @@ module GerritFS
     def file?(path)
       forward(path, false, __method__)
     end
+
+    def read_file(path)
+      forward(path, "", __method__)
+    end
+
   end
 end

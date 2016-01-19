@@ -70,12 +70,16 @@ module GerritFS
       end
     end
 
+    def real(path)
+      puts "Real path " + File.join(@temp, path)
+      File.join(@temp, path)
+    end
+
     def contents(path)
       clone!
       puts self.class.to_s +  '|' + __method__.to_s + '|' + path
 
-      prefix = File.join(@temp, path)
-      puts "Real path " + prefix
+      prefix = real(path)
       Dir[File.join(prefix, '*')].map do |file|
         file.gsub(prefix, '').gsub(/^\//,'')
       end
@@ -84,15 +88,19 @@ module GerritFS
     def file?(path)
       clone!
       puts self.class.to_s +  '|' + __method__.to_s + '|' + path
-      puts "Real path " + File.join(@temp, path)
-      File.file?(File.join(@temp, path))
+      File.file?(real(path))
     end
 
     def directory?(path)
       clone!
       puts self.class.to_s +  '|' + __method__.to_s + '|' + path
-      puts "Real path " + File.join(@temp, path)
-      File.directory?(File.join(@temp, path))
+      File.directory?(real(path))
+    end
+
+    def read_file(path)
+      clone!
+      puts self.class.to_s +  '|' + __method__.to_s + '|' + path
+      File.read(real(path))
     end
 
   end
@@ -121,11 +129,6 @@ module GerritFS
     end
 
     include CompositionFS
-
-    def read_file(path)
-      puts self.class.to_s +  '|' + __method__.to_s + '|' + path
-      projects[path]
-    end
   end
 
 end
