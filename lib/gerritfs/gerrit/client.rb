@@ -37,7 +37,9 @@ module GerritFS
       end
 
       def changes(query)
-        get('/a/changes/' + '?' + query)
+        res = get('/a/changes/' + '?' + query)
+        puts res
+        res
       end
 
       def clone_url_for(project)
