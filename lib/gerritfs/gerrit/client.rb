@@ -38,7 +38,6 @@ module GerritFS
 
       def changes(query)
         res = get('/a/changes/' + '?' + query)
-        puts res
         res
       end
 
