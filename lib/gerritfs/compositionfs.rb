@@ -9,15 +9,22 @@ module GerritFS
       when '/'
         root_value
       else
-        elements.each do |prefix, fs|
-          match = /^\/#{prefix}(.*)$/
-          if path =~ match
-            sub_path = $1.empty? ? '/' : $1
-            puts "Forward to #{fs} with path #{sub_path}"
-            return fs.send(method, sub_path)
+        sub_fs = elements.map do |prefix, fs|
+          if path =~ /^\/#{prefix}(.*)$/
+            [ $1, fs ]
+          else
+            nil
           end
+        end.compact.sort_by do |prefix, fs|
+          prefix.size
+        end.first
+        if sub_fs
+          sub_path = sub_fs[0].empty? ? '/' : sub_fs[0]
+          puts "Forward to #{sub_fs[1]} with path #{sub_path}"
+          return sub_fs[1].send(method, sub_path)
+        else
+          raise "No match for #{path}"
         end
-        raise "No match for #{path}"
       end
     end
 

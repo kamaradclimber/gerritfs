@@ -15,7 +15,7 @@ module GerritFS
       @elements ||= projects.each_with_object({}) do |pair, mem|
         name, project = pair
         url = @gerrit.clone_url_for(name)
-        mem[name.gsub('/', '_')] = ChangesFS.new(@gerrit, url)
+        mem[name.gsub('/', '_')] = ChangesFS.new(@gerrit, name)
       end
       @elements.merge({
         dashboard: @dashboard

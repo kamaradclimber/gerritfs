@@ -32,6 +32,9 @@ module GerritFS
         if response.code == 200
         JSON.parse(strip(response.body)) 
         else
+          puts (base_url + path)
+          puts response.code
+          puts response.body
           raise "Invalid response code #{response.code}", response
         end
       end
