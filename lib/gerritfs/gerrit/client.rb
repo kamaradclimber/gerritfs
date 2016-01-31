@@ -40,8 +40,12 @@ module GerritFS
       end
 
       def changes(query)
-        res = get('/a/changes/' + '?' + query)
-        res
+        get('/a/changes/' + '?' + query)
+      end
+
+      def change(id, fields=[])
+        suffix = "?" + fields.map {|f| "o=#{f}" }.join('&') unless fields.empty?
+        get("/a/changes/#{id}#{suffix}")
       end
 
       def clone_url_for(project)

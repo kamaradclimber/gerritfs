@@ -43,6 +43,7 @@ module GerritFS
         "Code-Review" =>    "CR",
         "Verified"    =>    "V",
         "Ready-to-Submit"=> "RTS",
+        "Non-Author-Code-Review" => "CR",
       }
       change['labels'].map do |type, details|
         value   = "OK" if details['approved'] 

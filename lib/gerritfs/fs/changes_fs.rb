@@ -13,16 +13,15 @@ module GerritFS
     end
     cache :changes, 10
 
-    def contents(path)
-      changes.map { |c| c['subject'] }
+    def elements
+      @elements ||= {}
+      changes.each do |c|
+        @elements[c['subject']] ||= ChangeFS.new(@gerrit, c['id'])
+      end
+      @elements
     end
 
-    def file?(path)
-      if path == '/'
-        false
-      else
-        true
-      end
-    end
+    include CompositionFS
+
   end
 end
