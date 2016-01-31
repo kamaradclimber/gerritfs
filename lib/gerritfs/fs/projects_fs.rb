@@ -1,5 +1,8 @@
 module GerritFS
   class ProjectsFS
+
+    extend Cache
+
     def initialize(gerrit)
       @gerrit = gerrit
     end
@@ -11,8 +14,9 @@ module GerritFS
 
     def projects
       @projects = @gerrit.projects
-      @projects # todo add clever caching
+      @projects
     end
+    cache :projects, 10
 
     def elements
       @elements ||= projects.each_with_object({}) do |pair, mem|

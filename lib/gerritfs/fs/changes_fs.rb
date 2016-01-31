@@ -1,14 +1,17 @@
 module GerritFS
   class ChangesFS
+
+    extend Cache
+
     def initialize(gerrit, project)
       @gerrit = gerrit
       @project = project
     end
 
     def changes
-      # todo add clever caching
       @gerrit.changes("q=project:#{@project}")
     end
+    cache :changes, 10
 
     def contents(path)
       changes.map { |c| c['subject'] }

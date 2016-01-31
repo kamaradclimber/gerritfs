@@ -1,5 +1,6 @@
 module GerritFS
   class ClonedProjectFS
+
     def initialize(gerrit, clone_url)
       @gerrit = gerrit
       @clone_url = clone_url

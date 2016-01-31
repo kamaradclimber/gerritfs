@@ -1,15 +1,17 @@
 module GerritFS
   class DashboardFS
+    extend GerritFS::Cache
+
     def initialize(gerrit, query)
       @gerrit = gerrit
       @query  = query
     end
 
     def changes
-      # todo add clever caching
       @changes = @gerrit.changes(@query).flatten
       @changes
     end
+    cache :changes, 10
 
     def contents(path)
       raise "fsjfk"

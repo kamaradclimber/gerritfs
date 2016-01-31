@@ -1,6 +1,7 @@
 require "gerritfs/version"
 require "gerritfs/gerrit/client"
 require "gerritfs/compositionfs"
+require "gerritfs/cache"
 
 require 'rfusefs'
 require 'tmpdir'
