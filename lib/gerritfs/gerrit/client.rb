@@ -1,6 +1,7 @@
 require 'httpclient'
 require 'json'
 require 'mash'
+require 'base64'
 
 module GerritFS
   module Gerrit
@@ -30,7 +31,14 @@ module GerritFS
       def get(path)
         response = @client.get(base_url + path)
         if response.code == 200
-        JSON.parse(strip(response.body)) 
+          case response.header['Content-Type'].first
+          when /json/
+            JSON.parse(strip(response.body))
+          when /text\/plain/
+            Base64.decode64(response.body)
+          else
+            raise "Unknown content-type #{response.header['Content-Type']}"
+          end
         else
           puts (base_url + path)
           puts response.code
@@ -46,6 +54,18 @@ module GerritFS
       def change(id, fields=[])
         suffix = "?" + fields.map {|f| "o=#{f}" }.join('&') unless fields.empty?
         get("/a/changes/#{id}#{suffix}")
+      end
+
+      def change_patch(id, revision = "current")
+        get("/a/changes/#{id}/revisions/#{revision}/patch")
+      end
+
+      def file_diff(id, file, revision = "current")
+        get("/a/changes/#{id}/revisions/#{revision}/files/#{file}/diff")
+      end
+
+      def commit(id, revision = "current")
+        get("/a/changes/#{id}/revisions/#{revision}/commit")
       end
 
       def clone_url_for(project)

@@ -1,5 +1,5 @@
 module GerritFS
-  class ChangesFS
+  class ChangeListFS
 
     extend Cache
 
@@ -8,20 +8,25 @@ module GerritFS
       @project = project
     end
 
-    def changes
-      @gerrit.changes("q=project:#{@project}")
+    def changes #TODO remove artificial limitation to 50 changes
+      @gerrit.
+        changes("q=project:#{@project}").
+        take(50)
     end
     cache :changes, 10
 
     def elements
       @elements ||= {}
       changes.each do |c|
-        @elements[c['subject']] ||= ChangeFS.new(@gerrit, c['id'])
+        @elements[sanitize(c['subject'])] ||= ChangeFS.new(@gerrit, c['id'])
       end
       @elements
     end
 
     include CompositionFS
+
+    private
+    include Sanitize
 
   end
 end
