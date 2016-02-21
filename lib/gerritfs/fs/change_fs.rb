@@ -59,6 +59,7 @@ module GerritFS
     end
     cache :change, 10
 
+    # return the content of the file before/after the change
     def get_ab_file(sanitized_name, a_or_b)
       current_revision = change['current_revision']
       file = change['revisions'][current_revision]['files'].keys.find { |k| sanitize(k) == sanitized_name }
@@ -70,6 +71,7 @@ module GerritFS
       end.flatten.join("\n")
     end
 
+    # return the content of the commit as a file
     def commit_file
       c = @gerrit.commit(@id)
       file = []
