@@ -70,6 +70,7 @@ module GerritFS
         res
       end.flatten.join("\n")
     end
+    cache :get_ab_file, 10
 
     # return the content of the commit as a file
     def commit_file
