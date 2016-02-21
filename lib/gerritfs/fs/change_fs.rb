@@ -88,5 +88,6 @@ module GerritFS
       file << c['message']
       file.join("\n")
     end
+    cache :commit_file, 10
   end
 end
