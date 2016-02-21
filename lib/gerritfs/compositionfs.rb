@@ -3,36 +3,6 @@ module GerritFS
 
     # expect a elements method returning a map of file systems and their prefix
 
-    def forward(path, root_value, method, opts)
-      indent = ".." * opts[:indentation]
-      #$stderr.puts "#{indent}#{self.class}|#{method}|#{path}"
-      case path
-      when '/'
-        root_value
-      else
-        sub_fs = elements.map do |prefix, fs|
-          if path =~ /^\/#{prefix}(.*)$/
-            [ $1, fs ]
-          else
-            nil
-          end
-        end.compact.sort_by do |prefix, fs|
-          prefix.size
-        end.first
-        if sub_fs
-          sub_path = sub_fs[0].empty? ? '/' : sub_fs[0]
-          #$stderr.puts "#{indent}Forward to #{sub_fs[1]} with path #{sub_path}"
-          if sub_fs[1].class.include?(CompositionFS)
-            return sub_fs[1].send(method, sub_path, opts)
-          else
-            return sub_fs[1].send(method, sub_path)
-          end
-        else
-          raise "No match for #{path}"
-        end
-      end
-    end
-
     def contents(path, opts={})
       opts[:indentation] = (opts[:indentation] || 0) + 1
       forward(path,
@@ -55,6 +25,28 @@ module GerritFS
     end
 
     private
-    
+
+    def forward(path, root_value, method, opts)
+      indent = ".." * opts[:indentation]
+      #$stderr.puts "#{indent}#{self.class}|#{method}|#{path}"
+      case path
+      when '/', "/._rfuse_check_"
+        root_value
+      else
+        sub_fs = elements.map do |prefix, fs|
+          path =~ /^\/#{prefix}(.*)$/ ? [ $1, fs ] : nil
+        end.compact.sort_by do |prefix, _| prefix.size end.first
+        if sub_fs
+          sub_path = sub_fs.first.empty? ? '/' : sub_fs.first
+          #$stderr.puts "#{indent}Forward to #{sub_fs[1]} with path #{sub_path}"
+          args = [sub_path]
+          args << opts if sub_fs[1].class.include?(CompositionFS)
+          sub_fs[1].send(method, *args)
+        else
+          raise "No match for #{path}"
+        end
+      end
+    end
+
   end
 end
