@@ -68,6 +68,10 @@ module GerritFS
         get("/a/changes/#{id}/revisions/#{revision}/commit")
       end
 
+      def comments(id, revision = "current")
+        get("/a/changes/#{id}/revisions/#{revision}/comments")
+      end
+
       def clone_url_for(project)
         @ssh_url + project + '.git'
       end

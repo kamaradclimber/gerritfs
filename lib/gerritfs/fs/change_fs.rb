@@ -45,7 +45,7 @@ module GerritFS
       when "/.b_COMMIT_MSG"
         commit_file
       when /\.(a|b)_(.*)$/
-        get_ab_file($2, $1)
+        get_ab_file_with_comments($2, $1)
       else
         "Nothing in there, see .a_#{file} and .b_#{file}\n"
       end
@@ -61,8 +61,7 @@ module GerritFS
 
     # return the content of the file before/after the change
     def get_ab_file(sanitized_name, a_or_b)
-      current_revision = change['current_revision']
-      file = change['revisions'][current_revision]['files'].keys.find { |k| sanitize(k) == sanitized_name }
+      file = file_from_sanitized(sanitized_name)
       diff = @gerrit.file_diff(@id, CGI.escape(file))
       diff['content'].map do |content|
         res = [content["ab"]]
@@ -71,6 +70,13 @@ module GerritFS
       end.flatten.join("\n")
     end
     cache :get_ab_file, 10
+
+    # return the file name from a sanitized one
+    # src_main_java_class.java returns src/main/java/class.java
+    def file_from_sanitized(sanitized_name)
+      current_revision = change['current_revision']
+      change['revisions'][current_revision]['files'].keys.find { |k| sanitize(k) == sanitized_name }
+    end
 
     # return the content of the commit as a file
     def commit_file
@@ -90,5 +96,37 @@ module GerritFS
       file.join("\n")
     end
     cache :commit_file, 10
+
+    def comments(file)
+      @gerrit.comments(@id)[file] || []
+    end
+    cache :comments, 10
+
+    def get_ab_file_with_comments(sanitized_name, a_or_b)
+      file_content = get_ab_file(sanitized_name, a_or_b).lines
+      comment_overlay = [nil].cycle.take(file_content.size)
+      if a_or_b == 'b'
+        file_name    = file_from_sanitized(sanitized_name)
+        comments(file_name).
+          group_by { |c| c['line'] }.
+          each do |line, cs|
+            comment_overlay[line -1] = cs.
+              sort_by { |c| c['updated'] }.
+              map do |c|
+                format_comment(c)
+              end.join("\n")
+          end
+      end
+      file_content.zip(comment_overlay).map do |l,c|
+        if c then l + c + "\n" else l end
+      end.join
+    end
+
+    def format_comment(c)
+      <<-EOH.gsub(/^\s+/,'')
+      Comment by #{c['author']['name']}: #{c['message']}
+      EOH
+    end
+
   end
 end
