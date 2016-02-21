@@ -5,7 +5,7 @@ module GerritFS
 
     def forward(path, root_value, method, opts)
       indent = ".." * opts[:indentation]
-      $stderr.puts "#{indent}#{self.class}|#{method}|#{path}"
+      #$stderr.puts "#{indent}#{self.class}|#{method}|#{path}"
       case path
       when '/'
         root_value
@@ -21,7 +21,7 @@ module GerritFS
         end.first
         if sub_fs
           sub_path = sub_fs[0].empty? ? '/' : sub_fs[0]
-          $stderr.puts "#{indent}Forward to #{sub_fs[1]} with path #{sub_path}"
+          #$stderr.puts "#{indent}Forward to #{sub_fs[1]} with path #{sub_path}"
           if sub_fs[1].class.include?(CompositionFS)
             return sub_fs[1].send(method, sub_path, opts)
           else
