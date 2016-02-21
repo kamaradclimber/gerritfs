@@ -24,6 +24,11 @@ module GerritFS
       forward(path, "", __method__, opts)
     end
 
+    def can_write?(path, opts={})
+      opts[:indentation] = (opts[:indentation] || 0) + 1
+      forward(path, false, __method__, opts)
+    end
+
     private
 
     def forward(path, root_value, method, opts)

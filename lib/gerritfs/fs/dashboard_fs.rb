@@ -25,6 +25,10 @@ module GerritFS
       !file?(path)
     end
 
+    def can_write?(path)
+      false
+    end
+
     def read_file(path)
       lines = changes.map do |c|
         [

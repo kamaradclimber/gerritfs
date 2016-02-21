@@ -51,6 +51,15 @@ module GerritFS
       end
     end
 
+    def can_write?(path)
+      case path
+      when /^\/\.b_/
+        true
+      else
+        false
+      end
+    end
+
     private
     include Sanitize
 

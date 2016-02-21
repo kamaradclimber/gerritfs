@@ -26,6 +26,11 @@ module GerritFS
       File.join(@temp, path)
     end
 
+    # clones are non-writable
+    def can_write?(path)
+      false
+    end
+
     def contents(path)
       clone!
       puts self.class.to_s +  '|' + __method__.to_s + '|' + path
