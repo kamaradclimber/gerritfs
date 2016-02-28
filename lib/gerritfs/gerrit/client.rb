@@ -30,7 +30,11 @@ module GerritFS
 
       def get(path)
         response = @client.get(base_url + path)
-        if response.code == 200
+        parse_response(response, base_url + path)
+      end
+
+      def parse_response(response, url, body = nil)
+        if (200..299).include? response.code
           case response.header['Content-Type'].first
           when /json/
             JSON.parse(strip(response.body))
@@ -40,11 +44,18 @@ module GerritFS
             raise "Unknown content-type #{response.header['Content-Type']}"
           end
         else
-          puts (base_url + path)
+          puts url
+          puts body if body
           puts response.code
           puts response.body
           raise "Invalid response code #{response.code}", response
         end
+      end
+
+      def put(path, data)
+        d = data.to_json
+        response = @client.put(base_url + path, body: d, header: { 'Content-Type': 'application/json'})
+        parse_response(response, base_url + path, d)
       end
 
       def changes(query)
@@ -70,6 +81,19 @@ module GerritFS
 
       def comments(id, revision = "current")
         get("/a/changes/#{id}/revisions/#{revision}/comments")
+      end
+
+      def draft_comments(id, revision = "current")
+        get("/a/changes/#{id}/revisions/#{revision}/drafts")
+      end
+
+      def create_draft_comment(id, file, line, comment, revision = "current")
+        put("/a/changes/#{id}/revisions/#{revision}/drafts",
+            path: file,
+            line: line,
+            message: comment
+           )
+
       end
 
       def clone_url_for(project)

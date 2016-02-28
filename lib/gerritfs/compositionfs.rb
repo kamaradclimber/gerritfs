@@ -29,9 +29,15 @@ module GerritFS
       forward(path, false, __method__, opts)
     end
 
+    def write_to(path, content, opts={})
+      opts[:indentation] = (opts[:indentation] || 0) + 1
+      forward(path, false, __method__, opts, content)
+    end
+
     private
 
-    def forward(path, root_value, method, opts)
+    def forward(path, root_value, method, *my_args)
+      opts, extra_args = my_args
       indent = ".." * opts[:indentation]
       #$stderr.puts "#{indent}#{self.class}|#{method}|#{path}"
       case path
@@ -45,6 +51,7 @@ module GerritFS
           sub_path = sub_fs.first.empty? ? '/' : sub_fs.first
           #$stderr.puts "#{indent}Forward to #{sub_fs[1]} with path #{sub_path}"
           args = [sub_path]
+          args += Array(extra_args) if extra_args
           args << opts if sub_fs[1].class.include?(CompositionFS)
           sub_fs[1].send(method, *args)
         else
