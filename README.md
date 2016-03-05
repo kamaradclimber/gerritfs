@@ -40,6 +40,16 @@ Patched files are in diff format (with some context). Comments are prefixed by @
 
 Of course this interface is going to change before being stabilized.
 
+Status
+------
+
+- [x] list all repositories
+- [x] list all reviews
+- [x] basic "my" dashboard
+- [x] can read reviews
+- [ ] can draft comments
+- [ ] can submit reviews (with score)
+
 
 Aliases
 -------
