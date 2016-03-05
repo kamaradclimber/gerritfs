@@ -178,7 +178,6 @@ module GerritFS
               current_line += 1
             else # this is a new comment draft
               puts "Adding comments on line #{current_line} (1)"
-              puts original_line.dump
               puts new_line.dump
               comments[current_line - 1] << new_line
               new_enum.next
@@ -194,16 +193,22 @@ module GerritFS
             elsif new_line.to_s.chomp == inner_line.to_s.chomp
               new_enum.next
               inner_enum.next
-              identical_lines << inner_line
+              # Store lines unless this is the header "Comment by ...:"
+              unless inner_line.chomp == original_line.header
+                identical_lines << inner_line
+              end
             elsif !original_line.is_a?(DraftComment) && allow_insertion # this is a new comment draft
               inner_enum = nil # reset inner_enum
               new_enum.next
-              puts "Adding comments on line #{current_line} (3)"
+              puts "Adding comments on line #{current_line} (2)"
+              puts new_line.dump
               comments[current_line - 1] << new_line
             elsif original_line.is_a?(DraftComment) # we append the original comment draft
               orig_enum.next
               inner_enum = nil # reset inner_enum
-              puts "Adding comments on line #{current_line} (2)"
+              new_enum.next
+              puts "Adding comments on line #{current_line} (3)"
+              puts new_line.dump
               comments[current_line - 1] += identical_lines
               comments[current_line - 1] << new_line
             else # current comment has been modified
@@ -240,12 +245,16 @@ module GerritFS
     end
 
     def author
-      @c['author']['name'] rescue "you"
+      @c['author']['name']
+    end
+
+    def header
+      "Comment by #{author} #{draft? ? '(draft)' : ''}:"
     end
 
     def to_s
       <<-EOH.gsub(/^\s+/,'')
-      Comment by #{author}#{draft? ? '(draft)' : ''}:
+      #{header}
       #{@c['message']}
       EOH
     end
@@ -254,6 +263,10 @@ module GerritFS
   class DraftComment < Comment
     def draft?
       true
+    end
+
+    def author
+      'you'
     end
   end
 
