@@ -180,7 +180,7 @@ module GerritFS
               puts "Adding comments on line #{current_line} (1)"
               puts original_line.dump
               puts new_line.dump
-              comments[current_line] << new_line
+              comments[current_line - 1] << new_line
               new_enum.next
             end
           when Comment
@@ -199,13 +199,13 @@ module GerritFS
               inner_enum = nil # reset inner_enum
               new_enum.next
               puts "Adding comments on line #{current_line} (3)"
-              comments[current_line] << new_line
+              comments[current_line - 1] << new_line
             elsif original_line.is_a?(DraftComment) # we append the original comment draft
               orig_enum.next
               inner_enum = nil # reset inner_enum
               puts "Adding comments on line #{current_line} (2)"
-              comments[current_line] += identical_lines
-              comments[current_line] << new_line
+              comments[current_line - 1] += identical_lines
+              comments[current_line - 1] << new_line
             else # current comment has been modified
               raise "Current comment has been modified ?"
             end
