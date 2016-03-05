@@ -167,8 +167,8 @@ module GerritFS
         elsif new_line.nil? # very weird
           puts "Deleted line seems likely on line #{current_line}"
           puts "Original line: #{original_line.dump}"
-          puts "Let's break to avoid infinite loop!"
-          break
+          puts "Let's avoid infinite loop!"
+          raise "One or more lines have been removed from the original file!"
         else
           case original_line
           when String # either new_line is identical or it is a new comment draft
@@ -215,10 +215,10 @@ module GerritFS
         end
       end
       f = file_from_sanitized(path.gsub(/^\/.b_/, ''))
-      puts "Comment drafts: #{comments.size}"
+      puts "Would submit #{comments.size} comment drafts"
       comments.each do |line, cs|
         puts '---'
-        puts "Would draft comments at line #{line}"
+        puts "Would draft comment at line #{line}"
         puts cs.join
         puts '---'
         #@gerrit.create_draft_comment(@id, f, line, cs.join)
