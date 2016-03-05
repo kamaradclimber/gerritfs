@@ -103,9 +103,10 @@ module GerritFS
       puts "#{sanitized_name} => #{file}"
       diff = @gerrit.file_diff(@id, CGI.escape(file))
       diff['content'].map do |content|
-        res = [content["ab"]]
-        res << content[a_or_b] if content[a_or_b]
-        res
+        res = [
+          content['ab'],
+          content[a_or_b],
+        ].compact
       end.flatten.join("\n")
     end
     cache :get_ab_file, 10
