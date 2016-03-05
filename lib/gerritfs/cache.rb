@@ -18,7 +18,7 @@ module GerritFS
             (Time.now + lifetime)
           )
         else
-          puts "Using cached version of #{method_name}(#{args})"
+          #puts "Using cached version of #{method_name}(#{args})"
         end
         @cache_module[key].result
       end
