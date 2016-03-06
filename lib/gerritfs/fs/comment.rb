@@ -1,5 +1,5 @@
 module GerritFS
-  class Comment
+  class CommentInfo
     def initialize(c)
       @c = c
     end
@@ -28,7 +28,7 @@ module GerritFS
     end
   end
 
-  class DraftComment < Comment
+  class DraftCommentInfo < CommentInfo
     def draft?
       true
     end

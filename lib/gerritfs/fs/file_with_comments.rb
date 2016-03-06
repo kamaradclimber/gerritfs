@@ -6,8 +6,8 @@ module GerritFS
       @filename = filename
       @a_or_b = a_or_b
       @content =  content.lines
-      @comments = comments.map { |c| Comment.new(c) }
-      @draft_comments = draft_comments.map { |c| DraftComment.new(c) }
+      @comments = comments.map { |c| CommentInfo.new(c) }
+      @draft_comments = draft_comments.map { |c| DraftCommentInfo.new(c) }
 
       # cleaning BOM markers otherwise size is wrong and the last char is truncated
       @content[0] = @content[0].gsub(/^\u{feff}/,'') unless @content.empty?

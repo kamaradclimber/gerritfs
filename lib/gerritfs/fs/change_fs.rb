@@ -152,6 +152,19 @@ module GerritFS
     cache :draft_comments, 10
 
     def write_comments(path, content)
+      comments = parse_comments(path, content)
+      f = file_from_sanitized(path.gsub(/^\/.b_/, ''))
+      puts "Would submit #{comments.size} comment drafts"
+      comments.each do |line, cs|
+        puts '---'
+        puts "Would draft comment at line #{line}"
+        puts cs.join
+        puts '---'
+        #@gerrit.create_draft_comment(@id, f, line, cs.join)
+      end
+    end
+
+    def parse_comments(path, content)
       # cleaning BOM markers
       orig    = get_file(path)
       content = content.force_encoding("utf-8").gsub(/^\xEF\xBB\xBF/, '')
@@ -186,7 +199,7 @@ module GerritFS
               comments[current_line - 1] << new_line
               new_enum.next
             end
-          when Comment
+          when CommentInfo
             allow_insertion = inner_enum.nil?
             identical_lines = [] if inner_enum.nil?
             inner_enum    ||= original_line.to_s.lines.each
@@ -201,13 +214,13 @@ module GerritFS
               unless inner_line.chomp == original_line.header
                 identical_lines << inner_line
               end
-            elsif !original_line.is_a?(DraftComment) && allow_insertion # this is a new comment draft
+            elsif !original_line.is_a?(DraftCommentInfo) && allow_insertion # this is a new comment draft
               inner_enum = nil # reset inner_enum
               new_enum.next
               puts "Adding comments on line #{current_line} (2)"
               puts new_line.dump
               comments[current_line - 1] << new_line
-            elsif original_line.is_a?(DraftComment) # we append the original comment draft
+            elsif original_line.is_a?(DraftCommentInfo) # we append the original comment draft
               orig_enum.next
               inner_enum = nil # reset inner_enum
               new_enum.next
@@ -223,15 +236,7 @@ module GerritFS
           end
         end
       end
-      f = file_from_sanitized(path.gsub(/^\/.b_/, ''))
-      puts "Would submit #{comments.size} comment drafts"
-      comments.each do |line, cs|
-        puts '---'
-        puts "Would draft comment at line #{line}"
-        puts cs.join
-        puts '---'
-        #@gerrit.create_draft_comment(@id, f, line, cs.join)
-      end
+      comments
     end
   end
 end
