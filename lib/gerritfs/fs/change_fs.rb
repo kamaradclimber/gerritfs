@@ -35,6 +35,8 @@ module GerritFS
     end
 
     def read_file(path)
+      raise Errno::ENOENT.new(path) if path =~ /\.sw(x|p)$/
+
       content = get_file(path)
       case content
       when FileWithComments
