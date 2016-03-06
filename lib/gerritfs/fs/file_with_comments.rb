@@ -38,7 +38,7 @@ module GerritFS
       comment_overlay = build_overlay
       @content.zip(comment_overlay).map do |l,cs|
         if cs then
-          [l] + cs + ["\n"]
+          [l] + cs
         else
           l
         end
