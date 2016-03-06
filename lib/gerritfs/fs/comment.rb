@@ -12,6 +12,10 @@ module GerritFS
       false
     end
 
+    def id
+      @c['id']
+    end
+
     def author
       @c['author']['name']
     end

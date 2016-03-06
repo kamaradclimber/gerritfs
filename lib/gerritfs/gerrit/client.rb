@@ -96,6 +96,15 @@ module GerritFS
 
       end
 
+      def update_draft_comment(review_id, file, id, line, comment, revision = "current")
+        put("/a/changes/#{review_id}/revisions/#{revision}/drafts/#{id}",
+            path: file,
+            line: line,
+            message: comment
+           )
+
+      end
+
       def clone_url_for(project)
         @ssh_url + project + '.git'
       end

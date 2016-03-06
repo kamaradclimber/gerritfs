@@ -1,5 +1,6 @@
 require 'cgi'
 require_relative 'comment'
+require_relative 'draft_comment'
 require_relative 'file_with_comments'
 
 module GerritFS
@@ -155,12 +156,12 @@ module GerritFS
       comments = parse_comments(path, content)
       f = file_from_sanitized(path.gsub(/^\/.b_/, ''))
       puts "Would submit #{comments.size} comment drafts"
-      comments.each do |line, cs|
+      comments.each do |line, draft|
         puts '---'
         puts "Would draft comment at line #{line}"
-        puts cs.join
+        puts draft.join
         puts '---'
-        #@gerrit.create_draft_comment(@id, f, line, cs.join)
+        draft.save(@gerrit)
       end
     end
 
@@ -168,9 +169,12 @@ module GerritFS
       # cleaning BOM markers
       orig    = get_file(path)
       content = content.force_encoding("utf-8").gsub(/^\xEF\xBB\xBF/, '')
+      f = file_from_sanitized(path.gsub(/^\/.b_/, ''))
 
 
-      comments = Hash.new do |h,k| h[k] = [] end
+      comments = Hash.new do |h,line|
+        h[line] = DraftComment.new(@id, f, line)
+      end
       orig_enum = orig.each
       new_enum  = content.lines.each
       current_line = 1 # represent line number of content without comments
@@ -226,8 +230,9 @@ module GerritFS
               new_enum.next
               puts "Adding comments on line #{current_line} (3)"
               puts new_line.dump
-              comments[current_line - 1] += identical_lines
+              identical_lines.each { |l| comments[current_line - 1] << l }
               comments[current_line - 1] << new_line
+              comments[current_line - 1].id = original_line.id
             else # current comment has been modified
               raise "Current comment has been modified ?"
             end
