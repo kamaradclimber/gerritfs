@@ -2,9 +2,8 @@ require_relative 'comment'
 
 module GerritFS
   class FileWithComments
-    def initialize(filename, a_or_b, content, comments, draft_comments)
+    def initialize(filename, content, comments, draft_comments)
       @filename = filename
-      @a_or_b = a_or_b
       @content =  content.lines
       @comments = comments.map { |c| CommentInfo.new(c) }
       @draft_comments = draft_comments.map { |c| DraftCommentInfo.new(c) }
@@ -24,12 +23,10 @@ module GerritFS
 
     def build_overlay
       comment_overlay = [nil].cycle.take(@content.size)
-      if @a_or_b == 'b'
-        (@comments + @draft_comments).group_by { |c| c['line'] }.
-          each do |line, cs|
-            comment_overlay[line -1] = cs.
-              sort_by { |c| c['updated'] }
-          end
+      (@comments + @draft_comments).group_by { |c| c['line'] }.
+        each do |line, cs|
+        comment_overlay[line -1] = cs.
+          sort_by { |c| c['updated'] }
       end
       comment_overlay
     end

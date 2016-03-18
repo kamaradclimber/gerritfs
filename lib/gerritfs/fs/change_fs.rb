@@ -15,17 +15,27 @@ module GerritFS
 
     META_FILES = [
       "COMMIT_MSG",
+      "CURRENT_REVISION",
     ]
 
     def contents(path)
-      current_revision = change['current_revision']
-      files = change['revisions'][current_revision]['files'].keys.map { |k| sanitize(k) }
 
-      diff_files = ["COMMIT_MSG", files].flatten.map do |file|
-        %w(.a_ .b_).map { |p| p + file }
+      revisions = change['revisions'].dup
+      # fake the 0-th revision (before the change)
+      # it includes all files modified in any of the patchset
+      before = {}
+      before['files'] = Hash[revisions.
+        values.map { |r| r['files'].keys }.flatten.uniq.map { |f| [f, {}] }]
+      before['_number'] = 0
+      revisions['0000'] = before
+
+      files = revisions.map do |revid, revision|
+        prefix = ".#{revision['_number']}_"
+        changed_files = revisions[revid]['files'].keys + ['COMMIT_MSG']
+        changed_files.map { |k| prefix + sanitize(k) }
       end
 
-      [files, diff_files, META_FILES].flatten
+      [files, META_FILES].flatten
     end
 
     def file?(path)
@@ -55,18 +65,22 @@ module GerritFS
     def get_file(path)
       file = path[1..-1]
       case path
+      when "/CURRENT_REVISION"
+        current = change['current_revision']
+        change['revisions'][current]['_number']
       when "/COMMIT_MSG"
-        commit_file
-      when "/.a_COMMIT_MSG"
+        commit_file(change['current_revision'])
+      when "/.0_COMMIT_MSG"
         ""
-      when "/.b_COMMIT_MSG"
-        commit_file # TODO handle commit like a normal file (with comments for instance)
-      when /\.(a|b)_(.*)$/
+      when /\.(\d+)_COMMIT_MSG/
+        commit_file($1) # TODO handle commit like a normal file (with comments for instance)
+      when /\.(\d+)_(.*)$/
+        revision = $1.to_i
         filename    = file_from_sanitized($2)
-        content = get_ab_file($2, $1)
-        FileWithComments.new($2, $1, content, comments(filename), draft_comments(filename))
+        content = get_ab_file($2, revision)
+        FileWithComments.new($2, content, comments(filename, revision), comments(filename, revision, draft: true))
       else
-        "Nothing in there, see .a_#{file} and .b_#{file}\n"
+        "Nothing in there, see .xx_#{file} with xx the patchset version\n"
       end
     end
 
@@ -74,7 +88,7 @@ module GerritFS
       case path
       when /\.sw(x|p)$/ # temporary vim files
         false
-      when /^\/\.b_/
+      when /^\/\.(\d+)_/
         true
       else
         false
@@ -83,12 +97,13 @@ module GerritFS
 
     def write_to(path, content)
       case path
-      when /^\/\.b_/
+      when /^\/\.(\d+)_/
+        revision = $1.to_i
         if content.empty?
           puts "Truncating #{path}, ignoring for now"
           return
         end
-        write_comments(path, content)
+        write_comments(path, content, revision)
       else
         raise "Cannot write in #{path}"
       end
@@ -98,15 +113,18 @@ module GerritFS
     include Sanitize
 
     def change
-      @gerrit.change(@id, %w(CURRENT_REVISION ALL_FILES))
+      @gerrit.change(@id, %w(ALL_REVISIONS ALL_FILES))
     end
     cache :change, 10
 
     # return the content of the file before/after the change
-    def get_ab_file(sanitized_name, a_or_b)
+    def get_ab_file(sanitized_name, revision)
+      # any version except the 0th will be reconstructed compared to base version.
+      a_or_b = revision > 0 ? 'b' : 'a'
+      reference = revision > 0 ? revision : 'current' # TODO: why happens if the file is not mentionned in the current revision ?
       file = file_from_sanitized(sanitized_name)
       puts "#{sanitized_name} => #{file}"
-      diff = @gerrit.file_diff(@id, CGI.escape(file))
+      diff = @gerrit.file_diff(@id, CGI.escape(file), reference)
       diff['content'].map do |content|
         res = [
           content['ab'],
@@ -124,8 +142,8 @@ module GerritFS
     end
 
     # return the content of the commit as a file
-    def commit_file
-      c = @gerrit.commit(@id)
+    def commit_file(revision)
+      c = @gerrit.commit(@id, revision)
       file = []
       file += c['parents'].map do |parent|
         "Parent:        #{parent['commit'][0..6]} (#{parent['subject']})"
@@ -142,19 +160,19 @@ module GerritFS
     end
     cache :commit_file, 10
 
-    def comments(file)
-      @gerrit.comments(@id)[file] || []
+    # Comments for the revision "0" are stored on revision 1 with the side "PARENT"
+    # filter comments given their side: PARENT or REVISION
+    def comments(file, revision, opts = {})
+      method = opts[:draft] ? :draft_comments : :comments
+      reference = revision > 0 ? revision : 1
+      cs = @gerrit.send(method, @id, reference)[file] || []
+      side = revision > 0 ? 'REVISION' : 'PARENT'
+      cs.select { |c| (c['side'] || 'REVISION') == side }
     end
     cache :comments, 10
 
-    def draft_comments(file)
-      @gerrit.draft_comments(@id)[file] || []
-    end
-    cache :draft_comments, 10
-
-    def write_comments(path, content)
-      comments = parse_comments(path, content)
-      f = file_from_sanitized(path.gsub(/^\/.b_/, ''))
+    def write_comments(path, content, revision)
+      comments = parse_comments(path, content, revision)
       puts "Would submit #{comments.size} comment drafts"
       comments.each do |line, draft|
         puts '---'
@@ -165,15 +183,16 @@ module GerritFS
       end
     end
 
-    def parse_comments(path, content)
+    # TODO refactor this method and add tests
+    def parse_comments(path, content, revision)
       # cleaning BOM markers
       orig    = get_file(path)
       content = content.force_encoding("utf-8").gsub(/^\xEF\xBB\xBF/, '')
-      f = file_from_sanitized(path.gsub(/^\/.b_/, ''))
+      f = file_from_sanitized(path.gsub(/^\/.(\d+)_/, ''))
 
 
       comments = Hash.new do |h,line|
-        h[line] = DraftComment.new(@id, f, line)
+        h[line] = DraftComment.new(@id, revision, f, line)
       end
       orig_enum = orig.each
       new_enum  = content.lines.each

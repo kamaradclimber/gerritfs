@@ -61,7 +61,7 @@ review() {
     dir=$(dirname $f)
     name=$(basename $f)
     echo Reviewing $name
-    vimdiff $dir/.a_$name $idr/.b_$name
+    vimdiff $dir/.0_$name $dir/.$(cat $dir/CURRENT_REVISION)_$name
   done
 }
 ```

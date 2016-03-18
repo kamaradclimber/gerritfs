@@ -67,27 +67,27 @@ module GerritFS
         get("/a/changes/#{id}#{suffix}")
       end
 
-      def change_patch(id, revision = "current")
+      def change_patch(id, revision)
         get("/a/changes/#{id}/revisions/#{revision}/patch")
       end
 
-      def file_diff(id, file, revision = "current")
+      def file_diff(id, file, revision)
         get("/a/changes/#{id}/revisions/#{revision}/files/#{file}/diff")
       end
 
-      def commit(id, revision = "current")
+      def commit(id, revision)
         get("/a/changes/#{id}/revisions/#{revision}/commit")
       end
 
-      def comments(id, revision = "current")
+      def comments(id, revision)
         get("/a/changes/#{id}/revisions/#{revision}/comments")
       end
 
-      def draft_comments(id, revision = "current")
+      def draft_comments(id, revision)
         get("/a/changes/#{id}/revisions/#{revision}/drafts")
       end
 
-      def create_draft_comment(id, file, line, comment, revision = "current")
+      def create_draft_comment(id, file, line, comment, revision)
         put("/a/changes/#{id}/revisions/#{revision}/drafts",
             path: file,
             line: line,
@@ -96,7 +96,7 @@ module GerritFS
 
       end
 
-      def update_draft_comment(review_id, file, id, line, comment, revision = "current")
+      def update_draft_comment(review_id, file, id, line, comment, revision)
         put("/a/changes/#{review_id}/revisions/#{revision}/drafts/#{id}",
             path: file,
             line: line,
