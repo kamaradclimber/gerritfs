@@ -25,7 +25,7 @@ module GerritFS
     end
 
     def to_s
-      <<-EOH.gsub(/^\s+/,'')
+      <<-EOH.gsub(/^\s+/, '')
       #{header}
       #{@c['message']}
       EOH

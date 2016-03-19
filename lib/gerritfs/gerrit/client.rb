@@ -6,7 +6,6 @@ require 'base64'
 module GerritFS
   module Gerrit
     class Client
-
       MAGIC = /^\)\]}'\n/
       def strip(body)
         body.gsub(MAGIC, '')
@@ -14,16 +13,15 @@ module GerritFS
 
       def initialize(opts)
         unless opts.base_url && opts.username && opts.password
-          raise "Missing option!"
+          raise 'Missing option!'
         end
         base_url opts.base_url
-        @ssh_url = 'ssh://' + opts.username + '@' + base_url.gsub(/\/$/,'').gsub(/http(s)?:\/\//,'')+ ':29418/'
+        @ssh_url = 'ssh://' + opts.username + '@' + base_url.gsub(/\/$/, '').gsub(/http(s)?:\/\//, '') + ':29418/'
         @client = HTTPClient.new
         @client.set_auth(base_url, opts.username, opts.password)
       end
 
-
-      def base_url(url=nil)
+      def base_url(url = nil)
         @base_url = url if url
         @base_url
       end
@@ -34,7 +32,7 @@ module GerritFS
       end
 
       def parse_response(response, url, body = nil)
-        if (200..299).include? response.code
+        if (200..299).cover? response.code
           case response.header['Content-Type'].first
           when /json/
             JSON.parse(strip(response.body))
@@ -54,7 +52,7 @@ module GerritFS
 
       def put(path, data)
         d = data.to_json
-        response = @client.put(base_url + path, body: d, header: { 'Content-Type': 'application/json'})
+        response = @client.put(base_url + path, body: d, header: { 'Content-Type': 'application/json' })
         parse_response(response, base_url + path, d)
       end
 
@@ -62,8 +60,8 @@ module GerritFS
         get('/a/changes/' + '?' + query)
       end
 
-      def change(id, fields=[])
-        suffix = "?" + fields.map {|f| "o=#{f}" }.join('&') unless fields.empty?
+      def change(id, fields = [])
+        suffix = '?' + fields.map { |f| "o=#{f}" }.join('&') unless fields.empty?
         get("/a/changes/#{id}#{suffix}")
       end
 
@@ -93,7 +91,6 @@ module GerritFS
             line: line,
             message: comment
            )
-
       end
 
       def update_draft_comment(review_id, file, id, line, comment, revision)
@@ -102,7 +99,6 @@ module GerritFS
             line: line,
             message: comment
            )
-
       end
 
       def clone_url_for(project)

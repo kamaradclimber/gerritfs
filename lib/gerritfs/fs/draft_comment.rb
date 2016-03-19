@@ -10,7 +10,7 @@ module GerritFS
       @review_id = review_id
       @revision  = revision
       @file      = file
-      @line      =line
+      @line = line
     end
 
     def save(client)

@@ -13,11 +13,11 @@ module GerritFS
     end
     cache :changes, 10
 
-    def contents(path)
-      raise "fsjfk"
+    def contents(_path)
+      raise 'fsjfk'
     end
 
-    def file?(path)
+    def file?(_path)
       true
     end
 
@@ -25,33 +25,34 @@ module GerritFS
       !file?(path)
     end
 
-    def can_write?(path)
+    def can_write?(_path)
       false
     end
 
-    def read_file(path)
+    def read_file(_path)
       lines = changes.map do |c|
         [
           c['status'],
           c['project'],
           c['subject'],
-          feedback(c).to_s,
+          feedback(c).to_s
         ]
       end
       tabulize(lines) + "\n"
     end
 
     private
+
     def feedback(change)
       short = {
-        "Code-Review" =>    "CR",
-        "Verified"    =>    "V",
-        "Ready-to-Submit"=> "RTS",
-        "Non-Author-Code-Review" => "CR",
+        'Code-Review' =>    'CR',
+        'Verified'    =>    'V',
+        'Ready-to-Submit' => 'RTS',
+        'Non-Author-Code-Review' => 'CR'
       }
       change['labels'].map do |type, details|
-        value   = "OK" if details['approved'] 
-        value   = "NO" if details['rejected'] 
+        value   = 'OK' if details['approved']
+        value   = 'NO' if details['rejected']
         if value.nil? && details['value']
           value   = details['value']
           value   = ((value > 0) ? '+' : '') + value.to_s
@@ -62,16 +63,15 @@ module GerritFS
 
     def tabulize(array)
       # compute column sizes
-      columns = array.inject(0) do |mem, el| [mem,el.size].max end
-      column_sizes = array.inject( [0] * columns) do |mem, el|
-        mem.zip(el).map do |max_column_size, column| [ max_column_size, column.size].max end
+      columns = array.inject(0) { |mem, el| [mem, el.size].max }
+      column_sizes = array.inject([0] * columns) do |mem, el|
+        mem.zip(el).map { |max_column_size, column| [max_column_size, column.size].max }
       end
       array.map do |line|
         line.zip(column_sizes).map do |value, size|
-          "#{value}#{ " " * (size - value.size + 1)}"
+          "#{value}#{' ' * (size - value.size + 1)}"
         end.join
       end.join("\n")
     end
-
   end
 end

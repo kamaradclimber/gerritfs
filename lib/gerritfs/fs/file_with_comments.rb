@@ -9,8 +9,9 @@ module GerritFS
       @draft_comments = draft_comments.map { |c| DraftCommentInfo.new(c) }
 
       # cleaning BOM markers otherwise size is wrong and the last char is truncated
-      @content[0] = @content[0].gsub(/^\u{feff}/,'') unless @content.empty?
+      @content[0] = @content[0].gsub(/^\u{feff}/, '') unless @content.empty?
     end
+
     def to_s
       format.join
     end
@@ -23,18 +24,18 @@ module GerritFS
 
     def build_overlay
       comment_overlay = [nil].cycle.take(@content.size)
-      (@comments + @draft_comments).group_by { |c| c['line'] }.
-        each do |line, cs|
-        comment_overlay[line -1] = cs.
-          sort_by { |c| c['updated'] }
+      (@comments + @draft_comments).group_by { |c| c['line'] }
+                                   .each do |line, cs|
+        comment_overlay[line - 1] = cs
+                                    .sort_by { |c| c['updated'] }
       end
       comment_overlay
     end
 
     def format
       comment_overlay = build_overlay
-      @content.zip(comment_overlay).map do |l,cs|
-        if cs then
+      @content.zip(comment_overlay).map do |l, cs|
+        if cs
           [l] + cs
         else
           l
