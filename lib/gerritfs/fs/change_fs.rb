@@ -18,13 +18,7 @@ module GerritFS
 
     def contents(_path)
       revisions = change['revisions'].dup
-      # fake the 0-th revision (before the change)
-      # it includes all files modified in any of the patchset
-      before = {}
-      before['files'] = Hash[revisions
-                        .values.map { |r| r['files'].keys }.flatten.uniq.map { |f| [f, {}] }]
-      before['_number'] = 0
-      revisions['0000'] = before
+      revisions['0000'] = fake_0th_revision(revisions)
 
       files = revisions.map do |revid, revision|
         prefix = ".#{revision['_number']}_"
@@ -33,6 +27,16 @@ module GerritFS
       end
 
       [files, META_FILES].flatten
+    end
+
+    def fake_0th_revision(revisions)
+      # fake the 0-th revision (before the change)
+      # it includes all files modified in any of the patchset
+      before = {}
+      before['files'] = Hash[revisions
+                        .values.map { |r| r['files'].keys }.flatten.uniq.map { |f| [f, {}] }]
+      before['_number'] = 0
+      before
     end
 
     def file?(path)
@@ -63,8 +67,7 @@ module GerritFS
       file = path[1..-1]
       case path
       when '/CURRENT_REVISION'
-        current = change['current_revision']
-        change['revisions'][current]['_number']
+        change['revisions'][change['current_revision']]['_number']
       when '/COMMIT_MSG'
         commit_file(change['current_revision'])
       when '/.0_COMMIT_MSG'
