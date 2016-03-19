@@ -22,6 +22,9 @@ Style/Documentation:
 Style/MultilineBlockChain:
   Enabled: false
 
+Style/SingleLineBlockParams:
+  Enabled: false
+
 # Allow complex code for now
 Metrics/AbcSize:
   Max: 22
