@@ -2,6 +2,10 @@
 
 This gem allows to mount a gerrit as a filesystem. It aims to improve UX to operate reviews.
 
+The original reasons to build this filesystem are:
+- efficiency. I am more efficient in my $EDITOR than in a web browser
+- avoid annoyances. Gerrit web UI catches my keys and prevents me to use my regular shortcuts
+
 Usage
 -----
 
@@ -18,7 +22,7 @@ username: a.username
 password: my_gerrit_http_password # see your preference on gerrit web interface
 ```
 
-Tree mapping (intent, most of it not implemented yet)
+Tree mapping (ticked if implemented)
 ------------
 
 - [x] **/my** contains a list of reviews grouped by projects and a file named **dashboard**
@@ -32,6 +36,7 @@ A review directory contains:
 - [x]  The diff can be seen by opening the hidden files with the basename prefixed by `.0_` and `.1_`. See alias section.
 - [ ] **_DISCUSSION**: a summary of the discussion so far
 - [ ] **_REVIEW.tmp**: a temporary file listing all comments not published so far
+- [x] **CURRENT_REVISION**: file containing the legacy id of the current revision
 
 [ ] Moving \_REVIEW.tmp to REVIEW should publish the comments to gerrit.
 
@@ -59,9 +64,11 @@ To see the diff of a file in a review, you can use the following function:
 review() {
   for f in $@; do
     dir=$(dirname $f)
+    # keep the same current through the review
+    current=${current:-$(cat $dir/CURRENT_REVISION)}
     name=$(basename $f)
     echo Reviewing $name
-    vimdiff $dir/.0_$name $dir/.$(cat $dir/CURRENT_REVISION)_$name
+    vimdiff $dir/.0_$name $dir/.${current}_$name
   done
 }
 ```
