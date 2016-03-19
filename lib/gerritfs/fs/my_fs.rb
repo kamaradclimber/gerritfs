@@ -15,8 +15,7 @@ module GerritFS
 
     def elements
       @elements ||= projects.each_with_object({}) do |pair, mem|
-        name, project = pair
-        url = @gerrit.clone_url_for(name)
+        name, _project = pair
         mem[name.tr('/', '_')] = ChangeListFS.new(@gerrit, name)
       end
       @elements.merge(dashboard: @dashboard)

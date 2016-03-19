@@ -45,7 +45,7 @@ module GerritFS
     end
 
     def read_file(path)
-      raise Errno::ENOENT.new(path) if path =~ /\.sw(x|p)$/
+      (raise Errno::ENOENT, path) if path =~ /\.sw(x|p)$/
 
       content = get_file(path)
       case content
@@ -75,7 +75,10 @@ module GerritFS
         revision = Regexp.last_match(1).to_i
         filename = file_from_sanitized(Regexp.last_match(2))
         content = get_ab_file(Regexp.last_match(2), revision)
-        FileWithComments.new(Regexp.last_match(2), content, comments(filename, revision), comments(filename, revision, draft: true))
+        FileWithComments.new(Regexp.last_match(2),
+                             content,
+                             comments(filename, revision),
+                             comments(filename, revision, draft: true))
       else
         "Nothing in there, see .xx_#{file} with xx the patchset version\n"
       end
@@ -85,7 +88,7 @@ module GerritFS
       case path
       when /\.sw(x|p)$/ # temporary vim files
         false
-      when /^\/\.(\d+)_/
+      when %r{^/\.(\d+)_}
         true
       else
         false
@@ -94,7 +97,7 @@ module GerritFS
 
     def write_to(path, content)
       case path
-      when /^\/\.(\d+)_/
+      when %r{^/\.(\d+)_}
         revision = Regexp.last_match(1).to_i
         if content.empty?
           puts "Truncating #{path}, ignoring for now"
@@ -119,12 +122,13 @@ module GerritFS
     def get_ab_file(sanitized_name, revision)
       # any version except the 0th will be reconstructed compared to base version.
       a_or_b = revision > 0 ? 'b' : 'a'
-      reference = revision > 0 ? revision : 'current' # TODO: why happens if the file is not mentionned in the current revision ?
+      # TODO: why happens if the file is not mentionned in the current revision ?
+      reference = revision > 0 ? revision : 'current'
       file = file_from_sanitized(sanitized_name)
       puts "#{sanitized_name} => #{file}"
       diff = @gerrit.file_diff(@id, CGI.escape(file), reference)
       diff['content'].map do |content|
-        res = [
+        [
           content['ab'],
           content[a_or_b]
         ].compact
@@ -181,12 +185,12 @@ module GerritFS
       end
     end
 
-    #  TODO refactor this method and add tests
+    # TODO: refactor this method and add tests
     def parse_comments(path, content, revision)
       # cleaning BOM markers
       orig    = get_file(path)
       content = content.force_encoding('utf-8').gsub(/^\xEF\xBB\xBF/, '')
-      f = file_from_sanitized(path.gsub(/^\/.(\d+)_/, ''))
+      f = file_from_sanitized(path.gsub(%r{^/.(\d+)_}, ''))
 
       comments = Hash.new do |h, line|
         h[line] = DraftComment.new(@id, revision, f, line)

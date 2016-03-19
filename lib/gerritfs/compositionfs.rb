@@ -37,25 +37,26 @@ module GerritFS
 
     def forward(path, root_value, method, *my_args)
       opts, extra_args = my_args
-      indent = '..' * opts[:indentation]
+      # indent = '..' * opts[:indentation]
       # $stderr.puts "#{indent}#{self.class}|#{method}|#{path}"
       case path
       when '/', '/._rfuse_check_'
         root_value
       else
+        # Find shortest matching filesystem
         sub_fs = elements.map do |prefix, fs|
-          path =~ /^\/#{prefix}(.*)$/ ? [Regexp.last_match(1), fs] : nil
+          path =~ %r{^/#{prefix}(.*)$} ? [Regexp.last_match(1), fs] : nil
         end.compact.sort_by { |prefix, _| prefix.size }.first
-        if sub_fs
-          sub_path = sub_fs.first.empty? ? '/' : sub_fs.first
-          # $stderr.puts "#{indent}Forward to #{sub_fs[1]} with path #{sub_path}"
-          args = [sub_path]
-          args += Array(extra_args) if extra_args
-          args << opts if sub_fs[1].class.include?(CompositionFS)
-          sub_fs[1].send(method, *args)
-        else
-          raise "No match for #{path}"
-        end
+
+        # TODO: raise correct exception: Errno...)
+        raise "No match for #{path}" unless sub_fs
+
+        sub_path = sub_fs.first.empty? ? '/' : sub_fs.first
+        # $stderr.puts "#{indent}Forward to #{sub_fs[1]} with path #{sub_path}"
+        args = [sub_path]
+        args += Array(extra_args) if extra_args
+        args << opts if sub_fs[1].class.include?(CompositionFS)
+        sub_fs[1].send(method, *args)
       end
     end
   end

@@ -16,7 +16,7 @@ module GerritFS
           raise 'Missing option!'
         end
         base_url opts.base_url
-        @ssh_url = 'ssh://' + opts.username + '@' + base_url.gsub(/\/$/, '').gsub(/http(s)?:\/\//, '') + ':29418/'
+        @ssh_url = 'ssh://' + opts.username + '@' + base_url.gsub(%r{/$}, '').gsub(%r{http(s)?://}, '') + ':29418/'
         @client = HTTPClient.new
         @client.set_auth(base_url, opts.username, opts.password)
       end
@@ -36,7 +36,7 @@ module GerritFS
           case response.header['Content-Type'].first
           when /json/
             JSON.parse(strip(response.body))
-          when /text\/plain/
+          when %r{text/plain}
             Base64.decode64(response.body)
           else
             raise "Unknown content-type #{response.header['Content-Type']}"

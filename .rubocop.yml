@@ -1,14 +1,29 @@
 AllCops:
   TargetRubyVersion: 2.3
 
+# I don't understand this cop
 Style/FrozenStringLiteralComment:
   Enabled: false
 
+# Allow some relaxed limits for length
 Metrics/LineLength:
   Max: 120
-
 Metrics/ParameterLists:
   Max: 8
-
 Metrics/MethodLength:
   Max: 30
+Metrics/ClassLength:
+  Max: 250
+
+# I am not ready for this yet
+Style/Documentation:
+   Enabled: false
+
+Style/MultilineBlockChain:
+  Enabled: false
+
+# Allow complex code for now
+Metrics/AbcSize:
+  Max: 22
+Metrics/CyclomaticComplexity:
+  Max: 8

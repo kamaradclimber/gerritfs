@@ -36,7 +36,7 @@ module GerritFS
 
       prefix = real(path)
       Dir[File.join(prefix, '*')].map do |file|
-        file.gsub(prefix, '').gsub(/^\//, '')
+        file.gsub(prefix, '').gsub(%r{^/}, '')
       end
     end
 

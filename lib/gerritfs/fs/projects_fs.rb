@@ -19,7 +19,7 @@ module GerritFS
 
     def elements
       @elements ||= projects.each_with_object({}) do |pair, mem|
-        name, project = pair
+        name, _project = pair
         url = @gerrit.clone_url_for(name)
         mem[name.tr('/', '_')] = ClonedProjectFS.new(@gerrit, url)
       end
